@@ -9,7 +9,7 @@
 - [x] Vähemalt üks näidikulaud on nähtaval
 - [ ] Vähemalt üks andmekvaliteedi test läbib
 
-Valmis on andmete sissevõtt veebist alla laaditud CSV failist, mis kajastab andmebaasi hetkeseisu, ja andmebaasist filtreeritakse välja Eesti kohta käivad read. Andmed laaditakse PostgreSQL + pg_duckdb _warehouse_'i, kust dbt kasutab neid _source layer_'ina. dbt mudelid arvutavad kolmest kavandatud mõõdikust kaks, Eestis müüdavate toodete koguarvu ning toodete arvu, millel on andmeaasis olemas peamised pakendiandmed. Näidikulaual kuvatakse joonist toodete koguarvu kohta.
+Valmis on andmete sissevõtt veebist alla laaditud CSV failist, mis kajastab andmebaasi hetkeseisu, ja andmebaasist filtreeritakse välja Eesti kohta käivad read (käsitsi käivitatava koodina). Andmed laaditakse PostgreSQL + pg_duckdb _warehouse_'i, kust dbt kasutab neid _source layer_'ina. dbt mudelid arvutavad kolmest kavandatud mõõdikust kaks, Eestis müüdavate toodete koguarvu ning toodete arvu, millel on andmeaasis olemas peamised pakendiandmed. Näidikulaual kuvatakse joonist toodete koguarvu kohta.
 
 ## Järgmised sammud
 
@@ -19,14 +19,13 @@ Valmis on andmete sissevõtt veebist alla laaditud CSV failist, mis kajastab and
 
 ## Mis takistab
 
-- Kuna enamik tiimiliikmeid on baastaseme rühmast, võtavad tegevused aega.
+- Kuna enamik tiimiliikmeid on baastaseme rühmast, on projekti tehniline teostamine väljakutse ja tegevused võtavad palju aega.
 
 ## Kontrollpunkt
 
 Käsk, millega saab kontrollida, et töövoog töötab:
 
 ```bash
-dbt run --profiles-dir .
+uv run python ingestion/bootstrap/load_bootstrap_snapshot.py
 ```
-
-Oodatav tulemus: [Kirjelda, mida töötav süsteem väljastab]
+Oodatav tulemus: käsk tagastab parquet' failist loetud ridade arvu, luuakse tabel raw.raw_products, millesse kirjutatakse andmed, ja käsk tagastab kirjutatud ridade arvu.
