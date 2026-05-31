@@ -1,37 +1,32 @@
 # Edenemisraport
 
-> **Juhend:** See fail on projektitöö teise nädala väljund. Uuenda lühidalt iga esitamise eel. Kustuta see juhendrida.
-
 ## Mis on valmis
 
-- [ ] Docker Compose käivitab kõik teenused
-- [ ] Andmeid saadakse allikast kätte
-- [ ] Andmed laetakse `staging` kihti
-- [ ] Vähemalt üks transformatsioon toimib
-- [ ] Vähemalt üks näidikulaud on nähtaval
+- [x] Docker Compose käivitab kõik teenused
+- [x] Andmeid saadakse allikast kätte
+- [x] Andmed laetakse `staging` kihti
+- [x] Vähemalt üks transformatsioon toimib
+- [x] Vähemalt üks näidikulaud on nähtaval
 - [ ] Vähemalt üks andmekvaliteedi test läbib
 
-[Täpsusta lühidalt, mis täpselt valmis on]
+Valmis on andmete sissevõtt veebist alla laaditud CSV failist, mis kajastab andmebaasi hetkeseisu, ja andmebaasist filtreeritakse välja Eesti kohta käivad read. Andmed laaditakse PostgreSQL + pg_duckdb _warehouse_'i, kust dbt kasutab neid _source layer_'ina. dbt mudelid arvutavad kolmest kavandatud mõõdikust kaks, Eestis müüdavate toodete koguarvu ning toodete arvu, millel on andmeaasis olemas peamised pakendiandmed. Näidikulaual kuvatakse joonist toodete koguarvu kohta.
 
 ## Järgmised sammud
 
-- [Esimene tegevus, mis ees ootab]
-- [Teine tegevus]
-- [Kolmas tegevus]
+- Transformatsioonide ja kvaliteedikontrollide täiendamine
+- Andmebaasi automaatne uuendamine OpenFoodFacts API deltafailidest
+- Näidikulaua täiendamine
 
 ## Mis takistab
 
-- [Probleem 1 — näiteks: API tagastab vigaseid väärtusi ühes linnas]
-- [Probleem 2 — või: "Praegu pole blokeerivaid probleeme"]
+- Kuna enamik tiimiliikmeid on baastaseme rühmast, võtavad tegevused aega.
 
 ## Kontrollpunkt
 
 Käsk, millega saab kontrollida, et töövoog töötab:
 
 ```bash
-# [Lisa siia käsk, mis näitab, et andmed liiguvad allikast näidikulauani]
-# Näiteks:
-docker compose exec pipeline python scripts/run_pipeline.py check
+dbt run --profiles-dir .
 ```
 
 Oodatav tulemus: [Kirjelda, mida töötav süsteem väljastab]
