@@ -38,6 +38,7 @@ select
         when split_part(categories_en, ',', 1) = 'Dairies' then 'Dairies'
         when split_part(categories_en, ',', 1) = 'Seafood' then 'Seafood'
         when split_part(categories_en, ',', 1) = 'Dietary supplements' then 'Dietary supplements'
+        else 'Other'
     end as categories_simplified,
 
     -- Andmete terviklikkuse flagid
