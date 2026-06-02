@@ -20,6 +20,25 @@ select
     created_datetime as estonia_dataset_first_seen_at,
 
     categories_tags,
+    /* Lisaks lihtsustatud tootekategooria. */
+    categories_en,
+    split_part(categories_en, ',', 1) as categories1,
+    case
+        when categories_en is null then null
+        when split_part(categories_en, ',', 1) = 'Condiments' then 'Condiments'
+        when split_part(categories_en, ',', 1) = 'Desserts' then 'Desserts'
+        when split_part(categories_en, ',', 1) = 'Snacks' then 'Snacks'
+        when split_part(categories_en, ',', 1) = 'Meals' then 'Meals'
+        when split_part(categories_en, ',', 1) in ('Beverages and beverages preparations', 'Beverages')
+             then 'Beverages and beverages preparations'
+        when split_part(categories_en, ',', 1) in ('Plant-based foods and beverages', 'Plant-based foods')
+             then 'Plant-based foods and beverages'
+        when split_part(categories_en, ',', 1) in ('Meats and their products', 'Meats')
+             then 'Meats and their products'
+        when split_part(categories_en, ',', 1) = 'Dairies' then 'Dairies'
+        when split_part(categories_en, ',', 1) = 'Seafood' then 'Seafood'
+        when split_part(categories_en, ',', 1) = 'Dietary supplements' then 'Dietary supplements'
+    end as categories_simplified,
 
     -- Andmete terviklikkuse flagid
 
