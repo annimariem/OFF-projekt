@@ -29,6 +29,18 @@ select
         and carbohydrates_100g is not null
         and fat_100g is not null
     ) as has_nutrition_info,
+    
+    /* Lisaks tunnus, mis katab kõik EL-i 
+    kohustuslikud toitainete pakendiandmed. */
+    (
+        energy_kcal_100g is not null
+        and proteins_100g is not null
+        and carbohydrates_100g is not null
+        and sugars_100g is not null
+        and fat_100g is not null
+        and saturated_fat_100g is not null
+        and salt_100g is not null
+    ) as has_eu_nutrition_info,
 
     ingredients_text is not null
         as has_ingredients,
