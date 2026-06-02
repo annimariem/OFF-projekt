@@ -81,12 +81,13 @@ Kõik paroolid ja võtmed on `.env` failis. Reposse läheb ainult `.env.example`
 
 Projekt kontrollib järgmist:
 
-1. [Test 1 - nt: kasutajate ID on unikaalne]
-2. [Test 2 - nt: tellimuse summa pole null]
-3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
-[Lisa rohkem, kui sul on]
+1. Test 1 - toote ID on unikaalne
+2. Test 2 - toitained 100 g kohta jäävad vahemikku 0-100
+3. Test 3 - suhkrute kogus pole suurem kui süsivesikute kogus, küllastunud rasvhapete kogus pole suurem kui rasvad kokku
+4. Test 4 - koostisosade loetelu, pakendi tüüp ja tootekategoria pole arv või väga lühike sõne (<3 märki)
+5. Test 5 - kogus on arv või arv, millele järgnevad sõned (ühik)
 
-Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
+Testide tulemused: salvestatakse tabelisse `quality_checks_summary`  [/ kuidas vaadata]
 
 ## Projekti struktuur
 
@@ -132,7 +133,7 @@ OFF-projekt/
 │   │   ├── staging/
 │   │   │   ├── .gitkeep
 │   │   │   ├── sources.yml          # dbt allikad
-│   │   │   └── stg_products.sql     # Staging mudelid
+│   │   │   └── stg_products.sql     # Staging mudelid, sh kvaliteedikontrollid
 │   │   │
 │   │   ├── intermediate/
 │   │   │   └── .gitkeep             # Äriloogika ja mõõdikute mudelid
