@@ -91,6 +91,7 @@ services:
     volumes:
       - superset_home:/app/superset_home
       - ./superset:/app/pythonpath
+      - ./superset/dashboards:/tmp/dashboards
 
     command: /bin/bash /app/pythonpath/init_superset.sh
 
