@@ -67,4 +67,4 @@ select
         )
     ) as completeness_score
 
-from {{ ref('stg_products') }}
+from {{ ref('stg_products_checked') }}
