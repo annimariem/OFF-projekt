@@ -2,6 +2,7 @@ select
     -- IDENTIFIERS
     code as product_code,
     url,
+    creator,
 
     -- TIMESTAMPS
     created_t,
