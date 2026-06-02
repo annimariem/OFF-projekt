@@ -3,6 +3,7 @@ select
     product_code,
     product_name,
     url,
+    creator,
 
     created_datetime as off_created_at,
     last_modified_datetime,
