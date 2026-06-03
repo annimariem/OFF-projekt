@@ -85,4 +85,15 @@ select
     cast(nullif(salt_100g, '') as numeric) as salt_100g,
     cast(nullif(sodium_100g, '') as numeric) as sodium_100g
 
-from {{ source('raw', 'raw_products') }}
+from {{ source('raw', 'raw_products') }} as s
+
+/* Ilmnes, et Eesti toodete väljavõttes leidub hulk ridu, 
+mis pole üldsegi toidud, vaid hoopis näiteks puhastusvahendid jms. 
+Siin on need read välja filtreeritud,
+et meie analüüsid kajastaksid vaid toitudega seotud andmeid. */
+where s.categories_en is null or (
+    s.categories_en ilike '%detergents%' 
+    or s.categories_en ilike '%cleaning%' 
+    or s.categories_en ilike '%varnishes%'
+)
+
