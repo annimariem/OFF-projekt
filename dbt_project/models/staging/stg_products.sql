@@ -91,7 +91,7 @@ from {{ source('raw', 'raw_products') }} as s
 mis pole üldsegi toidud, vaid hoopis näiteks puhastusvahendid jms. 
 Siin on need read välja filtreeritud,
 et meie analüüsid kajastaksid vaid toitudega seotud andmeid. */
-where s.categories_en is null or (
+where s.categories_en is null or not(
     s.categories_en ilike '%detergents%' 
     or s.categories_en ilike '%cleaning%' 
     or s.categories_en ilike '%varnishes%'
