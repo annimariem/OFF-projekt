@@ -104,7 +104,16 @@ CREATE TABLE IF NOT EXISTS raw.delta_files (
     discovered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     -- Millal delta alla laaditi.
-    downloaded_at TIMESTAMPTZ
+    downloaded_at TIMESTAMPTZ,
+
+    -- Filtreerimise käigus leitud Eesti toodete arv.
+    filtered_product_count INTEGER,
+
+    -- Raw kihti edukalt laaditud toodete arv.
+    loaded_product_count INTEGER,
+
+    -- Millal delta täielikult töödeldi.
+    processed_at TIMESTAMPTZ
 );
 
 

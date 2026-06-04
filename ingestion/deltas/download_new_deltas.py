@@ -3,7 +3,7 @@ from pathlib import Path
 import requests
 
 from delta_metadata import (
-    get_pending_delta_files,
+    get_required_delta_files,
     mark_delta_as_downloaded,
 )
 
@@ -59,34 +59,34 @@ def download_delta_file(
 
 def download_new_deltas():
     """
-    Laeb alla kõik töötlemata deltafailid.
+    Laeb alla kõik vajalikud deltad.
+
+    Vajalik = delta on:
+      - uuem kui viimane bootstrap
+      - veel alla laadimata
     """
 
-    pending_deltas = get_pending_delta_files()
+    pending_deltas = get_required_delta_files()
 
     if not pending_deltas:
 
-        print("Uusi deltafaile ei leitud.")
+        print("Allalaadimist vajavaid " "deltafaile ei leitud.")
 
         return
 
-    print(f"Leitud " f"{len(pending_deltas)} " f"allalaadimata deltafaili.")
-
-    downloaded_count = 0
+    print(f"Leitud " f"{len(pending_deltas)} " f"allalaaditavat deltafaili.")
 
     for delta in pending_deltas:
 
         download_delta_file(
             delta_id=delta["delta_id"],
-            delta_filename=delta["delta_filename"],
-            source_url=delta["source_url"],
+            delta_filename=(delta["delta_filename"]),
+            source_url=(delta["source_url"]),
         )
-
-        downloaded_count += 1
 
     print()
 
-    print(f"Alla laaditud: " f"{downloaded_count}")
+    print("Deltafailide " "allalaadimine lõpetatud.")
 
 
 if __name__ == "__main__":

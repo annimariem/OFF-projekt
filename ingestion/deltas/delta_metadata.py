@@ -1,9 +1,19 @@
 import os
 import re
-from datetime import datetime, UTC
-
+import sys
 import psycopg2
+from datetime import datetime, UTC
 from dotenv import load_dotenv
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from ingestion.bootstrap.bootstrap_metadata import (
+    get_latest_bootstrap_snapshot_date,
+)
 
 load_dotenv()
 
@@ -145,9 +155,63 @@ def register_delta_file(
         conn.close()
 
 
-def get_pending_delta_files():
+def get_required_delta_files():
     """
-    Tagastab allalaadimata deltafailid.
+    Tagastab allalaadimata deltafailid,
+    mis on uuemad kui viimane bootstrap.
+    """
+
+    bootstrap_date = get_latest_bootstrap_snapshot_date()
+
+    if bootstrap_date is None:
+
+        raise RuntimeError("Bootstrap snapshot puudub.")
+
+    conn = get_postgres_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute(
+                """
+                SELECT
+                    delta_id,
+                    delta_filename,
+                    source_url,
+                    delta_start_datetime,
+                    delta_end_datetime
+                FROM raw.delta_files
+                WHERE
+                    downloaded_at IS NULL
+                    AND delta_end_datetime > %s
+                ORDER BY delta_start_datetime
+                """,
+                (bootstrap_date,),
+            )
+
+            rows = cursor.fetchall()
+
+            return [
+                {
+                    "delta_id": row[0],
+                    "delta_filename": row[1],
+                    "source_url": row[2],
+                    "delta_start_datetime": row[3],
+                    "delta_end_datetime": row[4],
+                }
+                for row in rows
+            ]
+
+    finally:
+
+        conn.close()
+
+
+def get_downloaded_unprocessed_deltas():
+    """
+    Tagastab alla laaditud,
+    kuid veel töötlemata deltad.
     """
 
     conn = get_postgres_connection()
@@ -160,15 +224,11 @@ def get_pending_delta_files():
                 SELECT
                     delta_id,
                     delta_filename,
-                    source_url,
-                    delta_start_ts,
-                    delta_end_ts,
-                    delta_start_datetime,
-                    delta_end_datetime,
-                    discovered_at,
-                    downloaded_at
+                    source_url
                 FROM raw.delta_files
-                WHERE downloaded_at IS NULL
+                WHERE
+                    downloaded_at IS NOT NULL
+                    AND processed_at IS NULL
                 ORDER BY delta_start_datetime
                 """)
 
@@ -179,12 +239,6 @@ def get_pending_delta_files():
                     "delta_id": row[0],
                     "delta_filename": row[1],
                     "source_url": row[2],
-                    "delta_start_ts": row[3],
-                    "delta_end_ts": row[4],
-                    "delta_start_datetime": row[5],
-                    "delta_end_datetime": row[6],
-                    "discovered_at": row[7],
-                    "downloaded_at": row[8],
                 }
                 for row in rows
             ]
@@ -210,11 +264,48 @@ def mark_delta_as_downloaded(
             cursor.execute(
                 """
                 UPDATE raw.delta_files
-                SET
-                    downloaded_at = NOW()
+                SET downloaded_at = NOW()
                 WHERE delta_id = %s
                 """,
                 (delta_id,),
+            )
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
+
+
+def mark_delta_as_processed(
+    delta_id,
+    filtered_product_count,
+    loaded_product_count,
+):
+    """
+    Märgib delta töödelduks.
+    """
+
+    conn = get_postgres_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute(
+                """
+                UPDATE raw.delta_files
+                SET
+                    filtered_product_count = %s,
+                    loaded_product_count = %s,
+                    processed_at = NOW()
+                WHERE delta_id = %s
+                """,
+                (
+                    filtered_product_count,
+                    loaded_product_count,
+                    delta_id,
+                ),
             )
 
         conn.commit()

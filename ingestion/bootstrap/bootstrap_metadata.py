@@ -119,6 +119,20 @@ def get_latest_bootstrap_snapshot():
         conn.close()
 
 
+def get_latest_bootstrap_snapshot_date():
+    """
+    Tagastab viimase bootstrapi source snapshot kuupäeva.
+    """
+
+    snapshot = get_latest_bootstrap_snapshot()
+
+    if snapshot is None:
+
+        return None
+
+    return snapshot["source_snapshot_date"]
+
+
 def create_bootstrap_load_run(snapshot_id):
     """
     Registreerib bootstrap laadimise alguse.
