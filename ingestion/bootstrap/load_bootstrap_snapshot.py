@@ -1,12 +1,19 @@
 from pathlib import Path
+
 import duckdb
 import psycopg2
 from psycopg2 import sql
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+from bootstrap_metadata import (
+    get_latest_bootstrap_snapshot,
+    create_bootstrap_load_run,
+    finish_bootstrap_load_run_success,
+    finish_bootstrap_load_run_failed,
+)
 
+load_dotenv()
 
 BOOTSTRAP_DATASET_PATH = Path("data/bootstrap/ee_products_bootstrap.parquet")
 
@@ -40,7 +47,7 @@ def recreate_raw_table(cursor, columns):
         CREATE TABLE raw.raw_products (
             {create_columns_sql}
         );
-    """)
+        """)
 
 
 def load_bootstrap_snapshot():
@@ -48,67 +55,102 @@ def load_bootstrap_snapshot():
     Laeb bootstrap parquet dataseti PostgreSQL raw layerisse.
     """
 
-    if not BOOTSTRAP_DATASET_PATH.exists():
+    bootstrap_metadata = get_latest_bootstrap_snapshot()
 
-        raise FileNotFoundError(
-            f"Bootstrap dataset puudub: " f"{BOOTSTRAP_DATASET_PATH}"
+    if bootstrap_metadata is None:
+
+        raise RuntimeError(
+            "Bootstrap metadata puudub tabelis " "raw.bootstrap_snapshots."
         )
 
-    print(f"Laen bootstrap datasetti: " f"{BOOTSTRAP_DATASET_PATH}")
+    run_id = create_bootstrap_load_run(snapshot_id=bootstrap_metadata["snapshot_id"])
 
-    # DuckDB kasutatakse parquet lugemiseks
+    con = None
+    postgres_conn = None
+    cursor = None
 
-    con = duckdb.connect()
+    try:
 
-    postgres_conn = get_postgres_connection()
+        if not BOOTSTRAP_DATASET_PATH.exists():
 
-    postgres_conn.autocommit = True
+            raise FileNotFoundError(
+                f"Bootstrap dataset puudub: " f"{BOOTSTRAP_DATASET_PATH}"
+            )
 
-    cursor = postgres_conn.cursor()
+        print(f"Laen bootstrap datasetti: " f"{BOOTSTRAP_DATASET_PATH}")
 
-    print("Loen parquet faili DuckDB kaudu...")
+        con = duckdb.connect()
 
-    duckdb_relation = con.execute(f"""
-        SELECT *
-        FROM read_parquet(
-            '{BOOTSTRAP_DATASET_PATH}'
+        postgres_conn = get_postgres_connection()
+        postgres_conn.autocommit = True
+
+        cursor = postgres_conn.cursor()
+
+        print("Loen parquet faili DuckDB kaudu...")
+
+        duckdb_relation = con.execute(f"""
+            SELECT *
+            FROM read_parquet(
+                '{BOOTSTRAP_DATASET_PATH}'
+            )
+            """)
+
+        columns = [description[0] for description in duckdb_relation.description]
+
+        rows = duckdb_relation.fetchall()
+
+        print(f"Laetud read parquet failist: " f"{len(rows):,}")
+
+        print("Loon raw.raw_products tabeli...")
+
+        recreate_raw_table(
+            cursor,
+            columns,
         )
-    """)
 
-    # Veerunimed DuckDB metadata põhjal
+        print("Kirjutan PostgreSQL raw layerisse...")
 
-    columns = [description[0] for description in duckdb_relation.description]
+        insert_query = sql.SQL("""
+            INSERT INTO raw.raw_products ({fields})
+            VALUES ({values})
+            """).format(
+            fields=sql.SQL(", ").join(map(sql.Identifier, columns)),
+            values=sql.SQL(", ").join(sql.Placeholder() * len(columns)),
+        )
 
-    rows = duckdb_relation.fetchall()
+        cursor.executemany(
+            insert_query,
+            rows,
+        )
 
-    print(f"Laetud read parquet failist: {len(rows):,}")
+        print(f"PostgreSQL kirjutatud read: " f"{len(rows):,}")
 
-    print("Loon raw.raw_products tabeli...")
+        finish_bootstrap_load_run_success(
+            run_id=run_id,
+            rows_loaded=len(rows),
+        )
 
-    recreate_raw_table(cursor, columns)
+        print("Bootstrap ingest lõpetatud")
 
-    print("Kirjutan PostgreSQL raw layerisse...")
+    except Exception as e:
 
-    insert_query = sql.SQL("""
-        INSERT INTO raw.raw_products ({fields})
-        VALUES ({values})
-    """).format(
-        fields=sql.SQL(", ").join(map(sql.Identifier, columns)),
-        values=sql.SQL(", ").join(sql.Placeholder() * len(columns)),
-    )
+        finish_bootstrap_load_run_failed(
+            run_id=run_id,
+            error_message=str(e),
+        )
 
-    cursor.executemany(
-        insert_query,
-        rows,
-    )
+        raise
 
-    print(f"PostgreSQL kirjutatud read: {len(rows):,}")
+    finally:
 
-    cursor.close()
-    postgres_conn.close()
-    con.close()
+        if cursor is not None:
+            cursor.close()
 
-    print("Bootstrap ingest lõpetatud")
+        if postgres_conn is not None:
+            postgres_conn.close()
+
+        if con is not None:
+            con.close()
 
 
 if __name__ == "__main__":

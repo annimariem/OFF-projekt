@@ -1,8 +1,0 @@
-{
-  "dataset": "ee_products_bootstrap",
-  "created_at": null,
-  "source_snapshot_date": null,
-  "filter": "countries_tags contains en:estonia",
-  "format": "parquet",
-  "version": 1
-}

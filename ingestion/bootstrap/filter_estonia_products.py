@@ -81,6 +81,8 @@ def filter_estonia_products():
 
     con.close()
 
+    return result[0]
+
 
 if __name__ == "__main__":
     filter_estonia_products()

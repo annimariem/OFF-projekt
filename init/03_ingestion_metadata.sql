@@ -28,6 +28,51 @@ CREATE TABLE IF NOT EXISTS raw.bootstrap_snapshots (
     notes TEXT
 );
 
+-- Projektiga kaasasoleva boostrapi kirje --
+-- Allalaadimise kuupäev 2026-05-28, kirjete arv 5714.
+INSERT INTO raw.bootstrap_snapshots (
+    source_snapshot_date,
+    bootstrap_file,
+    product_count,
+    status,
+    notes
+)
+VALUES (
+    DATE '2026-05-28',
+    'data/bootstrap/ee_products_bootstrap.parquet',
+    5714,
+    'SUCCESS',
+    'Initial bootstrap dataset committed with repository'
+);
+
+-- Bootstrap laadimiste ajalugu.
+--
+-- Iga kirje kirjeldab ühte bootstrap dataseti laadimist
+-- raw.raw_products tabelisse.
+
+CREATE TABLE IF NOT EXISTS raw.bootstrap_load_runs (
+    run_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    -- Viide bootstrap datasetile, mida laaditi.
+    snapshot_id BIGINT NOT NULL
+        REFERENCES raw.bootstrap_snapshots(snapshot_id),
+
+    -- Laadimise algus.
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Laadimise lõpp.
+    finished_at TIMESTAMPTZ,
+
+    -- Käivituse tulemus:
+    -- SUCCESS | FAILED
+    status TEXT NOT NULL,
+
+    -- Eduka laadimise korral laaditud ridade arv.
+    rows_loaded INTEGER,
+
+    -- Veateade ebaõnnestumise korral.
+    error_message TEXT
+);
 
 -- OpenFoodFactsi deltafailide register --
 ------------------------------------------
