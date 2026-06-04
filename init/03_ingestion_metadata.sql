@@ -88,13 +88,22 @@ CREATE TABLE IF NOT EXISTS raw.delta_files (
     -- Delta faili allalaadimise URL.
     source_url TEXT NOT NULL,
 
-    -- Delta avaldamise aeg (kui allikas selle annab).
-    published_at TIMESTAMPTZ,
+    -- Delta faili algushetk (Unix timestamp failinimest).
+    delta_start_ts BIGINT NOT NULL,
+
+    -- Delta faili lõpphetk (Unix timestamp failinimest).
+    delta_end_ts BIGINT NOT NULL,
+
+    -- Delta faili algushetk UTC kuupäeva/kellaajana.
+    delta_start_datetime TIMESTAMPTZ NOT NULL,
+
+    -- Delta faili lõpphetk UTC kuupäeva/kellaajana.
+    delta_end_datetime TIMESTAMPTZ NOT NULL,
 
     -- Millal pipeline delta avastas.
     discovered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Millal delta tegelikult alla laaditi.
+    -- Millal delta alla laaditi.
     downloaded_at TIMESTAMPTZ
 );
 
