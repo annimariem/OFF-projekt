@@ -16,29 +16,51 @@ select
 
         Tulevikus peaks see väli kirjeldama:
         "millal meie pipeline nägi toodet esimest korda Eesti datasetis"
+
+        Jääb praegu tegemata...
     */
 
     created_datetime as estonia_dataset_first_seen_at,
 
     categories_tags,
+
     /* Lisaks lihtsustatud tootekategooria. */
-    categories_en,
-    split_part(categories_en, ',', 1) as categories1,
     case
-        when categories_en is null then null
-        when split_part(categories_en, ',', 1) = 'Condiments' then 'Condiments'
-        when split_part(categories_en, ',', 1) = 'Desserts' then 'Desserts'
-        when split_part(categories_en, ',', 1) = 'Snacks' then 'Snacks'
-        when split_part(categories_en, ',', 1) = 'Meals' then 'Meals'
-        when split_part(categories_en, ',', 1) in ('Beverages and beverages preparations', 'Beverages')
-             then 'Beverages and beverages preparations'
-        when split_part(categories_en, ',', 1) in ('Plant-based foods and beverages', 'Plant-based foods')
-             then 'Plant-based foods and beverages'
-        when split_part(categories_en, ',', 1) in ('Meats and their products', 'Meats')
-             then 'Meats and their products'
-        when split_part(categories_en, ',', 1) = 'Dairies' then 'Dairies'
-        when split_part(categories_en, ',', 1) = 'Seafood' then 'Seafood'
-        when split_part(categories_en, ',', 1) = 'Dietary supplements' then 'Dietary supplements'
+        when nullif(trim(categories_tags), '') is null
+            then null
+
+        when categories_tags ilike '%en:condiments%'
+            then 'Condiments'
+
+        when categories_tags ilike '%en:desserts%'
+            then 'Desserts'
+
+        when categories_tags ilike '%en:snacks%'
+            then 'Snacks'
+
+        when categories_tags ilike '%en:meals%'
+            then 'Meals'
+
+        when categories_tags ilike '%en:beverages-and-beverages-preparations%'
+          or categories_tags ilike '%en:beverages%'
+            then 'Beverages and beverages preparations'
+
+        when categories_tags ilike '%en:plant-based-foods-and-beverages%'
+            then 'Plant-based foods and beverages'
+
+        when categories_tags ilike '%en:meats-and-their-products%'
+          or categories_tags ilike '%en:meats%'
+            then 'Meats and their products'
+
+        when categories_tags ilike '%en:dairies%'
+            then 'Dairies'
+
+        when categories_tags ilike '%en:seafood%'
+            then 'Seafood'
+
+        when categories_tags ilike '%en:dietary-supplements%'
+            then 'Dietary supplements'
+
         else 'Other'
     end as categories_simplified,
 
