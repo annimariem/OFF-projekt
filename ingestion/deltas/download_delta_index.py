@@ -11,7 +11,7 @@ HEADERS = {"User-Agent": "OFF-Estonia-Analytics/1.0"}
 
 def download_delta_index():
 
-    print(f"Laen delta indexi: " f"{DELTA_INDEX_URL}")
+    print(f"Laadin delta indexi: " f"{DELTA_INDEX_URL}")
 
     response = requests.get(
         DELTA_INDEX_URL,

@@ -252,7 +252,7 @@ def mark_delta_as_downloaded(
     delta_id,
 ):
     """
-    Märgib deltafaili allalaetuks.
+    Märgib deltafaili allalaadituks.
     """
 
     conn = get_postgres_connection()

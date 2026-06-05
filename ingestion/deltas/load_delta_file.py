@@ -314,7 +314,7 @@ def load_delta_file(
     delta_filename,
 ):
     """
-    Laeb ühe deltafaili raw.raw_products tabelisse.
+    Laadib ühe deltafaili raw.raw_products tabelisse.
     """
 
     delta_file = DELTA_DIR / delta_filename
@@ -323,7 +323,7 @@ def load_delta_file(
 
         raise FileNotFoundError(f"Delta fail puudub: {delta_file}")
 
-    print(f"\nLaen deltafaili:\n" f"{delta_filename}")
+    print(f"\nLaadin deltafaili:\n" f"{delta_filename}")
 
     duck_conn = duckdb.connect()
 
@@ -378,7 +378,7 @@ def load_delta_file(
 
         postgres_conn.commit()
 
-        print(f"Laetud read: {len(rows)}")
+        print(f"Laaditud read: {len(rows)}")
 
         return len(rows)
 

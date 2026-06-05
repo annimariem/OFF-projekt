@@ -52,7 +52,7 @@ def recreate_raw_table(cursor, columns):
 
 def load_bootstrap_snapshot():
     """
-    Laeb bootstrap parquet dataseti PostgreSQL raw layerisse.
+    Laadib bootstrap parquet dataseti PostgreSQL raw layerisse.
     """
 
     bootstrap_metadata = get_latest_bootstrap_snapshot()
@@ -77,7 +77,7 @@ def load_bootstrap_snapshot():
                 f"Bootstrap dataset puudub: " f"{BOOTSTRAP_DATASET_PATH}"
             )
 
-        print(f"Laen bootstrap datasetti: " f"{BOOTSTRAP_DATASET_PATH}")
+        print(f"Laadin bootstrap datasetti: " f"{BOOTSTRAP_DATASET_PATH}")
 
         con = duckdb.connect()
 
@@ -99,9 +99,9 @@ def load_bootstrap_snapshot():
 
         rows = duckdb_relation.fetchall()
 
-        print(f"Laetud read parquet failist: " f"{len(rows):,}")
+        print(f"Laaditud read parquet failist: " f"{len(rows):,}")
 
-        print("Loon raw.raw_products tabeli...")
+        print("Loon raw.raw_products tabeli uuesti...")
 
         recreate_raw_table(
             cursor,

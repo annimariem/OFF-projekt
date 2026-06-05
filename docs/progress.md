@@ -4,7 +4,7 @@
 
 - [x] Docker Compose käivitab kõik teenused
 - [x] Andmeid saadakse allikast kätte
-- [x] Andmed laetakse `staging` kihti
+- [x] Andmed laaditakse `staging` kihti
 - [x] Vähemalt üks transformatsioon toimib
 - [x] Vähemalt üks näidikulaud on nähtaval
 - [ ] Vähemalt üks andmekvaliteedi test läbib

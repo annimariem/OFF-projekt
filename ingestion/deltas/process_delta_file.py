@@ -125,7 +125,7 @@ def process_delta_file(
     Töötleb ühe deltafaili:
     - määrab schema mode'i
     - loendab Eesti tooted
-    - laeb need raw kihti
+    - laadib need raw kihti
     - uuendab metadata tabelit
     """
 

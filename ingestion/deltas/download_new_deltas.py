@@ -18,7 +18,7 @@ def download_delta_file(
     source_url,
 ):
     """
-    Laeb ühe deltafaili alla.
+    Laadib ühe deltafaili alla.
     """
 
     DELTA_DOWNLOAD_DIR.mkdir(
@@ -36,7 +36,7 @@ def download_delta_file(
 
         return
 
-    print(f"Laen deltafaili: " f"{delta_filename}")
+    print(f"Laadin deltafaili: " f"{delta_filename}")
 
     response = requests.get(
         source_url,
@@ -59,7 +59,7 @@ def download_delta_file(
 
 def download_new_deltas():
     """
-    Laeb alla kõik vajalikud deltad.
+    Laadib alla kõik vajalikud deltad.
 
     Vajalik = delta on:
       - uuem kui viimane bootstrap
