@@ -19,10 +19,17 @@ with DAG(
         ),
     )
 
-    register_delta_files = BashOperator(
-        task_id="register_delta_files",
+    register_deltas = BashOperator(
+        task_id="register_deltas",
         bash_command=(
             "cd /opt/project && " "python ingestion/deltas/register_delta_files.py"
+        ),
+    )
+
+    process_deltas = BashOperator(
+        task_id="process_deltas",
+        bash_command=(
+            "cd /opt/project && " "python ingestion/deltas/process_delta_file.py"
         ),
     )
 
@@ -42,4 +49,4 @@ with DAG(
         """,
     )
 
-    download_delta_index >> register_delta_files >> dbt_run >> dbt_test
+    download_delta_index >> register_deltas >> process_deltas >> dbt_run >> dbt_test

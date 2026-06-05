@@ -27,8 +27,11 @@ services:
       start_period: 5s
 
   # --- Airflow container ---
+
   airflow:
-    image: apache/airflow:3.1.8
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
 
     container_name: off-airflow
 
