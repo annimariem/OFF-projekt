@@ -7,19 +7,25 @@ from delta_metadata import (
     mark_delta_as_processed,
 )
 
+from load_delta_file import (
+    load_delta_file,
+)
+
 ESTONIA_TAG = "en:estonia"
 
 DELTA_DIR = Path("data/deltas/files")
 
 
-def get_estonia_product_count(
+def get_schema_mode(
     con,
     delta_file,
 ):
     """
-    Loendab Eesti tooted sõltumata sellest,
-    kas DuckDB inferib faili relatsioonilise
-    skeemina või MAP(JSON) skeemina.
+    Määrab, kuidas DuckDB konkreetset
+    deltafaili parsib.
+
+    RELATIONAL: Veerud on eraldi väljad.
+    MAP: Kogu dokument on ühes json veerus.
     """
 
     schema = con.execute(f"""
@@ -33,6 +39,54 @@ def get_estonia_product_count(
     is_map_mode = len(schema) == 1 and schema[0][0] == "json"
 
     if is_map_mode:
+
+        return "MAP"
+
+    return "RELATIONAL"
+
+
+def print_delta_schema_modes():
+    """
+    Kuvab kõikide lokaalselt allalaaditud
+    deltafailide schema mode'i.
+    """
+
+    con = duckdb.connect()
+
+    try:
+
+        print("\n=== DELTA SCHEMA MODES ===\n")
+
+        for delta_file in sorted(DELTA_DIR.glob("*.json.gz")):
+
+            mode = get_schema_mode(
+                con,
+                delta_file,
+            )
+
+            print(f"{mode:<12}" f"{delta_file.name}")
+
+    finally:
+
+        con.close()
+
+
+def get_estonia_product_count(
+    con,
+    delta_file,
+):
+    """
+    Loendab Eesti tooted sõltumata sellest,
+    kas DuckDB inferib faili relatsioonilise
+    skeemina või MAP(JSON) skeemina.
+    """
+
+    mode = get_schema_mode(
+        con,
+        delta_file,
+    )
+
+    if mode == "MAP":
 
         result = con.execute(f"""
             SELECT COUNT(*)
@@ -68,14 +122,11 @@ def process_delta_file(
     delta_filename,
 ):
     """
-    Töötleb ühe deltafaili.
-
-    MVP:
-    - filtreerib Eesti tooted
-    - loendab need
+    Töötleb ühe deltafaili:
+    - määrab schema mode'i
+    - loendab Eesti tooted
+    - laeb need raw kihti
     - uuendab metadata tabelit
-
-    Raw kihti veel ei kirjuta.
     """
 
     delta_file = DELTA_DIR / delta_filename
@@ -90,6 +141,13 @@ def process_delta_file(
 
     try:
 
+        schema_mode = get_schema_mode(
+            con,
+            delta_file,
+        )
+
+        print(f"Schema mode: " f"{schema_mode}")
+
         filtered_product_count = get_estonia_product_count(
             con,
             delta_file,
@@ -97,18 +155,16 @@ def process_delta_file(
 
         print(f"Leitud Eesti tooteid: " f"{filtered_product_count}")
 
-        #
-        # TODO järgmises commitis:
-        # kirjuta Eesti tooted
-        # PostgreSQL raw.raw_products tabelisse
-        #
+        rows_loaded = load_delta_file(delta_filename)
 
-        loaded_product_count = filtered_product_count
+        if rows_loaded is None:
+
+            raise RuntimeError("Delta laadimine ei " "tagastanud ridade arvu.")
 
         mark_delta_as_processed(
             delta_id=delta_id,
             filtered_product_count=(filtered_product_count),
-            loaded_product_count=(loaded_product_count),
+            loaded_product_count=(rows_loaded),
         )
 
         print("Delta metadata uuendatud.")
@@ -145,4 +201,7 @@ def process_all_deltas():
 
 
 if __name__ == "__main__":
+
+    # print_delta_schema_modes()
+
     process_all_deltas()
