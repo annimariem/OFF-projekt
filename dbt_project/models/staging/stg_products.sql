@@ -1,3 +1,18 @@
+with ranked_products as (
+
+    select
+        *,
+        row_number() over (
+            partition by code
+            order by
+                cast(nullif(last_modified_t, '') as bigint) desc nulls last,
+                cast(nullif(last_updated_t, '') as bigint) desc nulls last
+        ) as row_num
+
+    from {{ source('raw', 'raw_products') }}
+
+)
+
 select
     -- IDENTIFIERS
     code as product_code,
@@ -6,11 +21,11 @@ select
 
     -- TIMESTAMPS
     created_t,
-    created_datetime,
+    to_timestamp(cast(nullif(created_t, '') as bigint)) as created_datetime,
     last_modified_t,
-    last_modified_datetime,
+    to_timestamp(cast(nullif(last_modified_t, '') as bigint)) as last_modified_datetime,
     last_updated_t,
-    last_updated_datetime,
+    to_timestamp(cast(nullif(last_updated_t, '') as bigint)) as last_updated_datetime,
 
     -- PRODUCT INFO
     product_name,
@@ -86,15 +101,20 @@ select
     cast(nullif(salt_100g, '') as numeric) as salt_100g,
     cast(nullif(sodium_100g, '') as numeric) as sodium_100g
 
-from {{ source('raw', 'raw_products') }} as s
+from ranked_products as s
 
-/* Ilmnes, et Eesti toodete väljavõttes leidub hulk ridu, 
-mis pole üldsegi toidud, vaid hoopis näiteks puhastusvahendid jms. 
-Siin on need read välja filtreeritud,
-et meie analüüsid kajastaksid vaid toitudega seotud andmeid. */
-where s.categories_en is null or not(
-    s.categories_en ilike '%detergents%' 
-    or s.categories_en ilike '%cleaning%' 
-    or s.categories_en ilike '%varnishes%'
-)
+where
+    s.row_num = 1
+    and (
+        /* Ilmnes, et Eesti toodete väljavõttes leidub hulk ridu, 
+        mis pole üldsegi toidud, vaid hoopis näiteks puhastusvahendid jms. 
+        Siin on need read välja filtreeritud,
+        et meie analüüsid kajastaksid vaid toitudega seotud andmeid. */
+        s.categories_en is null
+        or not (
+            s.categories_en ilike '%detergents%'
+            or s.categories_en ilike '%cleaning%'
+            or s.categories_en ilike '%varnishes%'
+        )
+    )
 
