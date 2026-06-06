@@ -385,7 +385,7 @@ superset/dashboards/dashboard_export_20260528T130721.zip
 Näidikulaua screenshot:
 
 ```text id="run18"
-superset/dashboards/open-food-facts-eesti-andmed-2026-05-28T13-08-17.526Z.jpg
+open-food-facts-eesti-andmed-2026-06-06T21-11-45.806Z.jpg
 ```
 
 
