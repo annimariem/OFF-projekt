@@ -31,22 +31,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.airflow
-    user: "0:0"
+    user: "${AIRFLOW_UID:-50000}:0"
     volumes:
       - .:/opt/project
     command:
       - bash
       - -c
       - |
+        id
+
         for d in logs target dbt_packages; do
           mkdir -p /opt/project/dbt_project/$$d
-          chown -R 50000:0 /opt/project/dbt_project/$$d
         done
 
-        su -s /bin/bash airflow -c "
-          cd /opt/project/dbt_project &&
-          dbt deps --profiles-dir .
-        "
+        cd /opt/project/dbt_project
+        dbt deps --profiles-dir .
     restart: "no"
 
   # --- Airflow container ---
