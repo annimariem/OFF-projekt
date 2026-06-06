@@ -26,8 +26,30 @@ services:
       retries: 5
       start_period: 5s
 
-  # --- Airflow container ---
+  # --- Airflow init ---
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    user: "0:0"
+    volumes:
+      - .:/opt/project
+    command:
+      - bash
+      - -c
+      - |
+        for d in logs target dbt_packages; do
+          mkdir -p /opt/project/dbt_project/$$d
+          chown -R 50000:0 /opt/project/dbt_project/$$d
+        done
 
+        su -s /bin/bash airflow -c "
+          cd /opt/project/dbt_project &&
+          dbt deps --profiles-dir .
+        "
+    restart: "no"
+
+  # --- Airflow container ---
   airflow:
     build:
       context: .
@@ -38,6 +60,8 @@ services:
     depends_on:
       analytics-db:
         condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
 
     env_file:
       - .env
@@ -74,30 +98,6 @@ services:
         airflow triggerer &
         airflow api-server
       "
-
-  # --- dbt container ---
-  dbt:
-    image: ghcr.io/dbt-labs/dbt-postgres:1.9.0
-
-    container_name: off-dbt
-
-    depends_on:
-      analytics-db:
-        condition: service_healthy
-
-    env_file:
-      - .env
-
-    volumes:
-      - ./:/opt/project
-
-    working_dir: /opt/project/dbt_project
-
-    entrypoint: /bin/bash
-
-    command: -c "tail -f /dev/null"
-
-    restart: unless-stopped
 
   # --- Superset ühekordne initsialiseerimine (migratsioonid + admin kasutaja) ---
   superset-init:
