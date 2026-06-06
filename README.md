@@ -266,7 +266,20 @@ Skript:
 
 ---
 
-### 5. Docker stacki käivitamine
+### 5. Bootstrap andmete laadimine warehouse'i
+
+```bash id="run9"
+uv run python ingestion/bootstrap/load_bootstrap_snapshot.py
+```
+
+Andmed laaditakse tabelisse:
+```text id="run10"
+raw.raw_products
+```
+
+---
+
+### 6. Docker stacki käivitamine
 
 ```bash id="run8"
 docker compose up -d --build
@@ -299,20 +312,6 @@ Pärast esmakordset käivitamist on kättesaadavad järgmised veebiliidesed:
 | Superset | http://localhost:8088 |
 
 Pordid sõltuvad .env muutujatest.
-
----
-
-### 6. Bootstrap andmete laadimine warehouse'i
-
-```bash id="run9"
-uv run python ingestion/bootstrap/load_bootstrap_snapshot.py
-```
-
-Andmed laaditakse tabelisse:
-
-```text id="run10"
-raw.raw_products
-```
 
 ---
 
