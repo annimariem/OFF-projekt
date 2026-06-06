@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: mart_data_completeness
+    description: "Agregeeritud andmete täidetuse mõõdikud Eesti Open Food Facts toodete kohta."
+
+    columns:
+      - name: total_products
+        description: "Toodete koguarv andmetabelis."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: unique_creators
+        description: "Unikaalsete sisestajate (loojate) arv andmestikus."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: avg_completeness_score
+        description: "Keskmine andmete täidetuse skoor toodete lõikes (vahemikus 0–4)."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4
+
+      - name: products_with_nutrition
+        description: "Toodete arv, millel on olemas toitumisalane teave."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: products_with_eu_nutrition
+        description: "Toodete arv, millel on olemas EL-i nõuetele vastav toitumisalane teave."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: products_with_ingredients
+        description: "Toodete arv, millel on olemas koostisosade tekst."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: products_with_packaging
+        description: "Toodete arv, millel on olemas pakendiinfo."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: products_with_quantity
+        description: "Toodete arv, millel on olemas koguse info."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0

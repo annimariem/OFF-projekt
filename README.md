@@ -80,16 +80,39 @@ Kõik paroolid ja võtmed on `.env` failis. Reposse läheb ainult `.env.example`
 6. dbt testid kontrollivad andmekvaliteeti.
 7. Superset visualiseerib marts-kihi andmeid.
 
+
 ## Andmekvaliteedi testid
 
-Projekt kontrollib järgmist:
+Andmekvaliteeti kontrollitakse `dbt` testide kaudu. Kuna Open Food Facts andmed on sisestatud vabatahtlike poolt ja sisaldavad tihti vigu, kasutame ebakorrektsete kirjete tuvastamiseks `severity: warn` taset, mis võimaldab pipeline'il jätkata, kuid teavitab vigastest andmetest.
 
-1. [Test 1 - nt: kasutajate ID on unikaalne]
-2. [Test 2 - nt: tellimuse summa pole null]
-3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
-[Lisa rohkem, kui sul on]
+1. **`staging.stg_products`** — `product_code` on unikaalne ja täidetud (andmete terviklikkuse kontroll).
+2. **`staging.stg_products`** — toitainete sisaldus (rasvad, süsivesikud, valgud jm) jääb vahemikku 0–100g.
+3. **`staging.stg_products`** — suhkru sisaldus ≤ süsivesikute koguarv ja küllastunud rasvhapped ≤ rasvad kokku.
+4. **`staging.stg_products`** — `categories_en` pikkus on vähemalt 3 märki ja ei koosne ainult numbritest (tehnilise prügi filtreerimine tekstiväljadest).
+5. **`staging.stg_products`** — `quantity` väli algab numbriga (formaadi kontroll, et tagada andmete loetavus).
+6. **`intermediate.int_product_metrics`** — `completeness_score` on vahemikus 0–4 (mõõdiku arvutuse korrektsuse kontroll).
+7. **`intermediate.int_product_metrics`** — tooteinfo olemasolu näitajad (nt kas toitumisteave või koostisosad on kirjas) on alati täidetud (arvutusloogika kontroll).
+8. **`marts.mart_data_completeness`** — koondstatistika (toodete koguarv, unikaalsete sisestajate arv) on alati positiivne arv ega ole tühi (raporti usaldusväärsuse kontroll).
 
-Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
+
+dbt testid käivitatakse automaatselt Airflow pipeline lõpus. Tulemused on nähtavad DAG-i logides. Teste on võimalik ka käsitsi käivitada.
+
+## dbt käsud (käsitsi käivitamiseks)
+
+```bash
+docker exec -it off-dbt bash
+
+# dbt projekti kaustas:
+cd /opt/project/dbt_project
+
+dbt run --profiles-dir .                  # käivitab kõik mudelid
+dbt test --profiles-dir .                 # käivitab kõik testid
+
+dbt test --select stg_products            # käivitab ainult stage testid
+dbt test --select int_product_metrics     # käivitab ainult intermediate testid
+dbt test --select mart_data_completeness  # käivitab ainult mart testid
+```
+
 
 ## Projekti struktuur
 
