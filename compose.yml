@@ -42,17 +42,18 @@ services:
     env_file:
       - .env
 
+    ports:
+      - "${AIRFLOW_PORT_HOST}:8080"
+
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       POSTGRES_HOST: analytics-db
       POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-
-      _PIP_ADDITIONAL_REQUIREMENTS: dbt-postgres==1.9.0
 
     volumes:
       - ./:/opt/project
@@ -65,7 +66,14 @@ services:
     restart: unless-stopped
 
     command: >
-      bash -c " airflow db migrate && airflow standalone "
+      bash -c "
+        airflow db migrate &&
+        airflow users create -u ${AIRFLOW_USER} -p ${AIRFLOW_PASSWORD} -f Airflow -l Admin -r Admin -e admin@example.com || true &&
+        airflow dag-processor &
+        airflow scheduler &
+        airflow triggerer &
+        airflow api-server
+      "
 
   # --- dbt container ---
   dbt:
@@ -127,7 +135,7 @@ services:
       - .env
 
     ports:
-      - "8088:8088"
+      - "${SUPERSET_PORT_HOST}:8088"
 
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
