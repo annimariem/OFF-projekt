@@ -1,8 +1,8 @@
-# [GRUPI NIMI] — Eesti andmete maht, terviklikkus ja uuenemine Open Food Facts andmebaasis
+# OpenFoodFacts Eesti toodete andmeplatvorm
 
 ## Äriküsimus
 
-Kui hästi katab [Open Food Facts andmebaas](https://world.openfoodfacts.org/discover) Eesti turul müüdavaid toidutooteid ja kui terviklikud on nende andmed?
+Kas [OpenFoodFacts](https://openfoodfacts.github.io/) andmebaas sisaldab piisavalt kvaliteetseid Eesti toodete andmeid, et neid kasutada analüütikas, teadustöös või avaliku toiduinfo rakendustes?
 
 Open Food Facts on avalik, vabatahtlike poolt täiendatav andmebaas, mis koondab rohkem kui nelja miljoni toidu pakendiandmeid 150 riigist. Andmebaasi on võimalik kasutada näiteks rakenduste loomiseks ja teadustöö sisendina.
 
@@ -18,30 +18,41 @@ Open Food Facts on avalik, vabatahtlike poolt täiendatav andmebaas, mis koondab
 
 Võimalusel arvutame mõõdikud ka tootekategooriate lõikes.
 
-## Arhitektuur
 
+## Arhitektuur
 ```mermaid
 flowchart TD
-csv[OpenFoodFacts CSV snapshot] --> py[Python ingestion scripts]
-airflow[Airflow scheduler] -->|"@daily"| txt[Delta index TXT]
-txt --> jsonl[Daily delta JSONL files]
-airflow -->|BashOperator| dbt[dbt run + dbt test]
-jsonl --> py
-py --> raw[(staging.raw_products)]
+csv[OpenFoodFacts CSV snapshot] --> parquet[Bootstrap Parquet dataset]
+parquet --> py[Python ingestion scripts]
+
+airflow[Airflow scheduler] -->|"BashOperator@daily"| txt[Download delta index]
+txt -->|BashOperator| reg[Register delta files]
+reg -->|BashOperator| jsonl[Download daily delta JSONL files]
+jsonl -->|BashOperator| proc[Process delta files]
+proc -->|BashOperator| dbt[dbt run + dbt test]
+
+py --> raw[(raw.raw_products)]
+proc --> raw
+
 raw -->|dbt staging| stg[staging.stg_products]
 stg -->|dbt intermediate| int[intermediate.int_product_metrics]
+
 int -->|dbt marts| mart1[(marts.mart_product_growth)]
 int -->|dbt marts| mart2[(marts.mart_data_completeness)]
+
 mart1 --> dashboard[Superset dashboard]
 mart2 --> dashboard
 ```
 Täpsem kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md)
+
+
 
 ## Andmestik
 
 | Allikas | Tüüp | Ajas muutuv? | Roll |
 |---------|------|--------------|------|
 | OpenFoodFacts andmebaas | CSV| Jah, iga päev | Algne andmestiku laadimine |
+| Bootstrap dataset | Parquet | Jah/Ei (kasutaja poolt uuendatav) | Arendus- ja testkeskkond |
 | OpenFoodFacts delta loend | TXT | Jah, iga päev | Andmestiku uuendamine |
 | OpenFoodFacts päeva delta | JSONL | Jah/Ei (iga deltafail eraldi on staatiline, aga iga päev lisandub uus fail) | Andmestiku uuendamine |
 
@@ -50,32 +61,24 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md)
 | Komponent | Tööriist |
 |-----------|---------|
 | Sissevõtt | Python, duckdb |
-| Transformatsioon | dbt |
 | Andmehoidla | PostgreSQL (pgDuckDB) |
+| Transformatsioonid | dbt |
 | Näidikulaud | Apache Superset 6.x |
-| Orkestreerimine | Airflow (TODO)|
+| Orkestreerimine | Apache Airflow |
 
 ## Saladused ja konfiguratsioon
 
 Kõik paroolid ja võtmed on `.env` failis. Reposse läheb ainult `.env.example`. Päris `.env` on `.gitignore`-s.
 
-| Muutuja | Tähendus |
-|---------|----------|
-| `POSTGRES_PASSWORD` | Analüütika andmebaasi parool |
-| `SUPERSET_SECRET_KEY` | Superset'i sessiooniküpsiste krüptovõti — **genereeri uus**, ära jäta vaikeväärtust |
-| `SUPERSET_ADMIN_USER` / `SUPERSET_ADMIN_PASSWORD` | Superset'i admin-kasutaja |
-
 ## Andmevoog lühidalt
 
-1. **Sissevõtt** — OpenFoodFacts andmed saadakse veebist alla laaditud CSV snapshotist, millest filtreeritud Eesti andmed säilitatakse projektis Parquet-formaadis (`ee_products_bootstrap.parquet`) ning tulevikus ka OpenFoodFacts API deltafailidest. Python ingestion scriptid töötlevad andmed ja valmistavad need laadimiseks ette.
-
-2. **Laadimine** — Andmed laaditakse PostgreSQL + pg_duckdb warehouse'i `raw.raw_products` tabelisse, kust dbt kasutab neid source layerina.
-
-3. **Transformatsioon** — dbt mudelid puhastavad ja normaliseerivad andmed `staging` kihis (`staging.stg_products`), arvutavad mõõdikuid `intermediate` kihis ning loovad dashboard-ready marts tabelid (nt andmete terviklikkus ja toodete statistika).
-
-4. **Testimine** — dbt testid kontrollivad võtmeväljade korrektsust, unikaalsust ja andmete terviklikkust. Planeeritud on nii schema-testid kui ka äriloogika kontrollid.
-
-5. **Näidikulaud** — Apache Superset dashboardid visualiseerivad toodete statistikat, Nutri-Score jaotust, NOVA gruppe ning andmete terviklikkuse mõõdikuid.
+1. Bootstrap dataset laaditakse PostgreSQL andmebaasi.
+2. Airflow DAG kontrollib regulaarselt OpenFoodFacts deltaindeksit.
+3. Uued deltafailid registreeritakse ja töödeldakse.
+4. Muudatused viiakse toorandmete tabelisse.
+5. dbt ehitab staging, intermediate ja marts kihid.
+6. dbt testid kontrollivad andmekvaliteeti.
+7. Superset visualiseerib marts-kihi andmeid.
 
 ## Andmekvaliteedi testid
 
@@ -95,7 +98,7 @@ OFF-projekt/
 ├── .env.example              # Näidis-keskkonnamuutujad
 ├── .gitignore                # Gitist välistatud failid ja kaustad
 ├── .python-version           # Python versiooni definitsioon
-├── Dockerfile                # Airflow/dbt custom image
+├── Dockerfile.airflow        # Airflow/dbt custom image
 ├── Dockerfile.superset       # Superset custom image PostgreSQL driveriga
 ├── compose.yml               # Docker teenuste definitsioonid
 ├── pyproject.toml            # Python dependency management
@@ -104,7 +107,7 @@ OFF-projekt/
 │
 ├── airflow/
 │   └── dags/
-│       └── .gitkeep          # Airflow DAG-ide kaust
+│       └── off_pipeline.py   # Põhi-DAG
 │
 ├── data/
 │   ├── bootstrap/
@@ -114,53 +117,44 @@ OFF-projekt/
 │   ├── deltas/
 │   │   └── .gitkeep          # Päevaste deltafailide hoidla
 │   │
-│   ├── snapshots/
-│   │   └── .gitkeep          # Snapshot failide hoidla
-│   │
-│   └── state/
-│       └── .gitkeep          # Pipeline state / checkpoint failid
+│   └── snapshots/
+│       └── .gitkeep          # Snapshot failide hoidla
 │
 ├── dbt_project/
 │   ├── dbt_project.yml       # dbt projekti põhikonfiguratsioon
 │   ├── profiles.yml          # dbt analüütika andmebaasi ühendus
 │   │
 │   ├── macros/
-│   │   ├── .gitkeep
 │   │   └── generate_schema_name.sql  # Custom schema naming macro
 │   │
 │   ├── models/
-│   │   ├── staging/
-│   │   │   ├── .gitkeep
-│   │   │   ├── sources.yml          # dbt allikad
-│   │   │   └── stg_products.sql     # Staging mudelid
-│   │   │
-│   │   ├── intermediate/
-│   │   │   └── .gitkeep             # Äriloogika ja mõõdikute mudelid
-│   │   │
-│   │   └── marts/
-│   │       └── .gitkeep             # Näidikulaua sisendtabelid
-│   │
-│   └── seeds/
-│       └── .gitkeep                 # dbt seed failid
+│   │   ├── staging/          # Staging mudelid
+│   │   ├── intermediate/     # Äriloogika ja mõõdikute mudelid
+│   │   └── marts/            # Näidikulaua sisendtabelid
 │
 ├── docs/
 │   ├── arhitektuur.md       # Süsteemi arhitektuuri kirjeldus
 │   └── progress.md          # Sprintide ja arenduse progress
 │
 ├── ingestion/
-│   ├── .gitkeep
+│   │── bootstrap/
+│   │   ├── bootstrap_metadata.py        # Bootstrap metadata kirjutamine
+│   │   ├── create_bootstrap_dataset.py  # Eesti toodete bootstrap dataset
+│   │   ├── download_off_snapshot.py     # OFF snapshot allalaadimine
+│   │   ├── filter_estonia_products.py   # Eesti toodete filtreerimine
+│   │   └── load_bootstrap_snapshot.py   # Bootstrap andmete laadimine warehouse'i
 │   │
-│   └── bootstrap/
-│       ├── create_bootstrap_dataset.py  # Eesti toodete bootstrap dataset
-│       ├── download_off_snapshot.py     # OFF snapshot allalaadimine
-│       ├── filter_estonia_products.py   # Eesti toodete filtreerimine
-│       ├── load_bootstrap_snapshot.py   # Bootstrap andmete laadimine warehouse'i
-│       └── utils.py                     # Üldised ingest utiliidid
-│
+│   └── deltas/
+│       ├── delta_metadata.py            # Deltafailide metadata kirjutamine
+│       ├── download_delta_index.py      # Deltaindeksi allalaadimine
+│       ├── download_new_deltas.py       # Registreeritud deltafailide allalaadimine
+│       ├── load_delta_file.py           # Ühe deltafaili laadimine warehouse'i
+│       ├── process_delta_file.py        # Deltafailide töötlemine
+│       └── register_delta_files.py      # Uute deltafailide registreerimine
 ├── init/
-│   ├── .gitkeep
-│   ├── 01_create_schemas.sql   # Warehouse schema-de loomine
-│   └── 02_extensions.sql       # PostgreSQL extensionite aktiveerimine
+│   ├── 01_create_schemas.sql      # Warehouse schema-de loomine
+│   ├── 02_extensions.sql          # PostgreSQL extensionite aktiveerimine
+│   └── 03_ingestion_metadata.sql  # Metadata tabelite loomine
 │
 └── superset/
     ├── init_superset.sh        # Superset init
@@ -196,7 +190,7 @@ Soovituslikud tööriistad:
 ### 2. Repositooriumi kloonimine
 
 ```bash id="run1"
-git clone https://github.com/karlraim/OFF-projekt.git
+git clone https://github.com/maarja-k/OFF-projekt
 cd OFF-projekt
 ```
 
@@ -212,20 +206,7 @@ cp .env.example .env
 
 Muuda vajadusel väärtused.
 
-Olulisemad muutujad:
-
-```env id="run3"
-POSTGRES_USER=off-projekt
-POSTGRES_PASSWORD=off-projekt
-POSTGRES_DB=off-projekt
-
-SUPERSET_SECRET_KEY=<genereeri_uus_secret_key>
-SUPERSET_ADMIN_USERNAME=admin
-SUPERSET_ADMIN_PASSWORD=admin
-```
-
 Superset secret key genereerimine:
-
 ```bash id="run4"
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
@@ -234,13 +215,13 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ### 4. Bootstrap andmete loomine või uuendamine (valikuline)
 
-Projektiga on juba kaasas bootstrap dataset seisuga **2026-05-20**, mis võimaldab:
+Projektiga on juba kaasas bootstrap dataset seisuga **2026-05-28**, mis võimaldab:
 
 * kiiret lokaalset arendust,
 * demo keskkonda,
 * offline testimist.
 
-Olemasolev bootstrap:
+Kaasasolev bootstrap:
 
 ```text id="run5"
 data/bootstrap/ee_products_bootstrap.parquet
@@ -254,17 +235,11 @@ Kui soovitakse värskemaid andmeid, saab bootstrap datasetti uuendada:
 uv run python ingestion/bootstrap/create_bootstrap_dataset.py
 ```
 
-Script:
+Skript:
 
 1. laadib alla OpenFoodFacts täieliku snapshoti,
 2. filtreerib välja Eesti tooted,
 3. salvestab tulemuse Parquet-formaadis bootstrap datasetina.
-
-Tulemus:
-
-```text id="run7"
-data/bootstrap/ee_products_bootstrap.parquet
-```
 
 ---
 
@@ -277,9 +252,30 @@ docker compose up -d --build
 Käivitatavad teenused:
 
 * PostgreSQL + pgDuckDB
-* dbt container
+* Apache Airflow
 * Apache Superset
 * Superset init container
+
+Kontrolli teenuste olekut:
+
+```bash
+docker compose ps
+```
+
+Kõik teenused peaksid olema olekus:
+
+```text
+running
+```
+
+Pärast esmakordset käivitamist on kättesaadavad järgmised veebiliidesed:
+
+| Teenus | URL |
+|---------|---------|
+| Airflow | http://localhost:8080 |
+| Superset | http://localhost:8088 |
+
+Pordid sõltuvad .env muutujatest.
 
 ---
 
@@ -297,34 +293,36 @@ raw.raw_products
 
 ---
 
-### 7. dbt transformatsioonid
+### 7. Airflow veebiliides
 
-Sisene dbt konteinerisse:
-
-```bash id="run11"
-docker exec -it off-dbt bash
+```text
+http://localhost:8080
 ```
 
-Liigu projekti:
+Kasutajanimi ja parool määratakse `.env` failis:
 
-```bash id="run12"
-cd /opt/project/dbt_project
+```env
+AIRFLOW_USER=admin
+AIRFLOW_PASSWORD=admin
 ```
 
-Käivita dbt:
+### 8. Käivita DAG esmakordselt
 
-```bash id="run13"
-dbt run --profiles-dir .
+Airflow UI:
+
+```text
+DAGs → off_pipeline → Trigger DAG
 ```
 
-Tulemus:
+või käsurealt:
 
-* `staging.stg_products`
-* tulevikus ka `intermediate` ja `marts` mudelid
+```bash
+docker exec -it off-airflow airflow dags trigger off_pipeline
+```
 
 ---
 
-### 8. Superset
+### 9. Superset veebiliides
 
 Superset on kättesaadav:
 
@@ -336,7 +334,7 @@ Admin kasutaja luuakse automaatselt `superset-init` teenuse kaudu.
 
 ---
 
-### 9. PostgreSQL ühendamine Supersetiga
+### 10. PostgreSQL ühendamine Supersetiga
 
 Superset GUI:
 
@@ -349,18 +347,19 @@ SQLAlchemy URI:
 ```text id="run16"
 postgresql+psycopg2://off-projekt:off-projekt@analytics-db:5432/off-projekt
 ```
+Näites kasutatakse vaikimisi .env.example väärtusi.
 
 ---
 
-### 10. Näidis dashboard
+### 11. Näidikulaud
 
-Näidis dashboard export:
+Näidikulaua export:
 
 ```text id="run17"
 superset/dashboards/dashboard_export_20260528T130721.zip
 ```
 
-Näidis screenshot:
+Näidikulaua screenshot:
 
 ```text id="run18"
 superset/dashboards/open-food-facts-eesti-andmed-2026-05-28T13-08-17.526Z.jpg
