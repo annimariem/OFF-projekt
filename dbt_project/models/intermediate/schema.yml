@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: int_product_metrics
+    description: "Intermediate mudel toodete mõõdikute ja täidetuse skooriga Eesti Open Food Facts andmete põhjal."
+    columns:
+      - name: product_code
+        description: "Toote unikaalne identifikaator."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: estonia_dataset_first_seen_at
+        description: "Ajatempel, millal toodet esimest korda Eesti andmestikus nähti."
+        data_tests:
+          - not_null
+
+      - name: categories_en
+        description: "Algne Open Food Facts kategooria tekst."
+
+      - name: categories1
+        description: "Esimene kategooria, mis on eraldatud algsest nimekirjast."
+
+      - name: categories_simplified
+        description: "Kaardistatud lihtsustatud kategooriate rühmad."
+        data_tests:
+          - accepted_values:
+              values:
+                - Condiments
+                - Desserts
+                - Snacks
+                - Meals
+                - Beverages and beverages preparations
+                - Plant-based foods and beverages
+                - Meats and their products
+                - Dairies
+                - Seafood
+                - Dietary supplements
+                - Other
+
+      - name: has_nutrition_info
+        description: "Näitab põhjaliku toitumisalase teabe olemasolu."
+        data_tests:
+          - not_null
+
+      - name: has_eu_nutrition_info
+        description: "Näitab EL-is nõutud toitumisalaste väljade olemasolu."
+        data_tests:
+          - not_null
+
+      - name: has_ingredients
+        description: "Näitab koostisosade teksti olemasolu."
+        data_tests:
+          - not_null
+
+      - name: has_packaging
+        description: "Näitab pakendiinfo olemasolu."
+        data_tests:
+          - not_null
+
+      - name: has_quantity
+        description: "Näitab koguse info olemasolu."
+        data_tests:
+          - not_null
+
+      - name: completeness_score
+        description: "Üldine andmete täidetuse skoor vahemikus 0 kuni 4."
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4
+              inclusive: true

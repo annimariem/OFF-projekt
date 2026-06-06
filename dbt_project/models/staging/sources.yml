@@ -3,42 +3,100 @@ version: 2
 sources:
   - name: raw
     schema: raw
+    description: "Toorandmed Open Food Facts andmebaasist, mis on laetud otse andmebaasi 'raw' skeemi."
     tables:
       - name: raw_products
+        description: "Eesti regiooni toodete toortabel — sisaldab toitumisalast teavet, koostisosi ja kategooriaid."
+        columns:
+          - name: product_code
+            description: "Toote vöötkood (unikaalne identifikaator)."
+          - name: created_datetime
+            description: "Kirje loomise aeg andmebaasis."
 
 models:
   - name: stg_products
+    description: "Puhastatud tooteandmed — valideeritud numbrilised väärtused, kontrollitud kategooriad ja koguse formaadid."
+    data_tests:
+      - dbt_utils.expression_is_true:
+          expression: "sugars_100g is null or carbohydrates_100g is null or sugars_100g <= carbohydrates_100g"
+          severity: warn
+          name: kontrolli_suhkru_suhet_sysivesikutesse
+
+      - dbt_utils.expression_is_true:
+          expression: "saturated_fat_100g is null or fat_100g is null or saturated_fat_100g <= fat_100g"
+          severity: warn
+          name: kontrolli_küllastunud_rasvade_suhet_rasvadesse
+
+      - dbt_utils.expression_is_true:
+          expression: "categories_en is null or (length(categories_en) >= 3 and categories_en !~ '^[0-9]+(\\.[0-9]+)?$')"
+          severity: warn
+          name: kontrolli_kategooria_teksti_korrektsust
+
+      - dbt_utils.expression_is_true:
+          expression: "quantity is null or quantity ~ '^[0-9]'"
+          severity: warn
+          name: kontrolli_koguse_formaati
 
     columns:
       - name: product_code
-        tests:
+        description: "Toote unikaalne kood."
+        data_tests:
           - not_null
           - unique
 
       - name: created_datetime
-        tests:
+        description: "Toote lisamise kuupäev ja kellaaeg."
+        data_tests:
           - not_null
 
       - name: energy_kcal_100g
-        tests:
+        description: "Energiasisaldus kilokalorites 100g kohta."
+        data_tests:
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
 
       - name: proteins_100g
-        tests:
+        description: "Valkude sisaldus grammides 100g kohta."
+        data_tests:
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
 
       - name: fat_100g
-        tests:
+        description: "Rasvade sisaldus grammides 100g kohta."
+        data_tests:
           - dbt_utils.accepted_range:
               min_value: 0
               inclusive: true
 
       - name: carbohydrates_100g
-        tests:
+        description: "Süsivesikute sisaldus grammides 100g kohta."
+        data_tests:
           - dbt_utils.accepted_range:
               min_value: 0
+              inclusive: true
+
+      - name: sugars_100g
+        description: "Suhkrute sisaldus grammides 100g kohta."
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+
+      - name: saturated_fat_100g
+        description: "Küllastunud rasvhapete sisaldus grammides 100g kohta."
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+
+      - name: salt_100g
+        description: "Soola sisaldus grammides 100g kohta."
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
               inclusive: true
