@@ -139,6 +139,9 @@ def process_delta_file(
 
     con = duckdb.connect()
 
+    con.execute("SET memory_limit='2GB'")
+    con.execute("SET threads=4")
+
     try:
 
         schema_mode = get_schema_mode(

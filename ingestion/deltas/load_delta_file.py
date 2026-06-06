@@ -327,6 +327,9 @@ def load_delta_file(
 
     duck_conn = duckdb.connect()
 
+    duck_conn.execute("SET memory_limit='2GB'")
+    duck_conn.execute("SET threads=4")
+
     postgres_conn = None
     cursor = None
 
