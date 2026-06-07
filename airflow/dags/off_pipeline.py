@@ -12,6 +12,41 @@ with DAG(
     tags=["off"],
 ) as dag:
 
+    check_bootstrap = BashOperator(
+        task_id="check_bootstrap",
+        bash_command="""
+        python - <<'PY'
+import os
+import psycopg2
+
+conn = psycopg2.connect(
+    host=os.getenv("POSTGRES_HOST"),
+    port=os.getenv("POSTGRES_PORT"),
+    dbname=os.getenv("POSTGRES_DB"),
+    user=os.getenv("POSTGRES_USER"),
+    password=os.getenv("POSTGRES_PASSWORD"),
+)
+
+with conn.cursor() as cur:
+    cur.execute('''
+        SELECT EXISTS (
+            SELECT 1
+            FROM raw.bootstrap_load_runs
+            WHERE status = 'SUCCESS'
+        )
+    ''')
+
+    count = cur.fetchone()[0]
+
+    if count == 0:
+        raise RuntimeError(
+            "Bootstrap dataset ei ole warehouse'isse laetud. "
+            "Käivita ingestion/bootstrap/load_bootstrap_snapshot.py"
+        )
+PY
+        """,
+    )
+
     download_delta_index = BashOperator(
         task_id="download_delta_index",
         bash_command=(
@@ -57,7 +92,8 @@ with DAG(
     )
 
     (
-        download_delta_index
+        check_bootstrap
+        >> download_delta_index
         >> register_deltas
         >> download_deltas
         >> process_deltas

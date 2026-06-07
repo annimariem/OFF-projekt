@@ -312,6 +312,7 @@ def build_map_query(delta_file):
 
 def load_delta_file(
     delta_filename,
+    duck_conn,
 ):
     """
     Laadib ühe deltafaili raw.raw_products tabelisse.
@@ -324,11 +325,6 @@ def load_delta_file(
         raise FileNotFoundError(f"Delta fail puudub: {delta_file}")
 
     print(f"\nLaadin deltafaili:\n" f"{delta_filename}")
-
-    duck_conn = duckdb.connect()
-
-    duck_conn.execute("SET memory_limit='2GB'")
-    duck_conn.execute("SET threads=4")
 
     postgres_conn = None
     cursor = None

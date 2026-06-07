@@ -250,9 +250,9 @@ Kaasasolev bootstrap:
 data/bootstrap/ee_products_bootstrap.parquet
 ```
 
-Seetõttu ei ole esmasel käivitamisel vaja OpenFoodFacts snapshotit uuesti alla laadida.
+Seetõttu ei ole esmasel käivitamisel vaja OpenFoodFacts snapshoti uuesti alla laadida.
 
-Kui soovitakse värskemaid andmeid, saab bootstrap datasetti uuendada:
+Kui soovitakse värskemaid andmeid (2026-05-28 on möödas >14 päeva), saab bootstrap-i uuendada:
 
 ```bash id="run6"
 uv run python ingestion/bootstrap/create_bootstrap_dataset.py
@@ -266,20 +266,7 @@ Skript:
 
 ---
 
-### 5. Bootstrap andmete laadimine warehouse'i
-
-```bash id="run9"
-uv run python ingestion/bootstrap/load_bootstrap_snapshot.py
-```
-
-Andmed laaditakse tabelisse:
-```text id="run10"
-raw.raw_products
-```
-
----
-
-### 6. Docker stacki käivitamine
+### 5. Docker stacki käivitamine
 
 ```bash id="run8"
 docker compose up -d --build
@@ -292,18 +279,6 @@ Käivitatavad teenused:
 * Apache Superset
 * Superset init container
 
-Kontrolli teenuste olekut:
-
-```bash
-docker compose ps
-```
-
-Kõik teenused peaksid olema olekus:
-
-```text
-running
-```
-
 Pärast esmakordset käivitamist on kättesaadavad järgmised veebiliidesed:
 
 | Teenus | URL |
@@ -312,6 +287,22 @@ Pärast esmakordset käivitamist on kättesaadavad järgmised veebiliidesed:
 | Superset | http://localhost:8088 |
 
 Pordid sõltuvad .env muutujatest.
+
+---
+
+### 6. Bootstrap andmete laadimine warehouse'i
+
+Enne bootstrap andmete laadimist Airflow DAG ei õnnestu.
+
+```bash id="run9"
+uv run python ingestion/bootstrap/load_bootstrap_snapshot.py
+```
+
+Andmed laaditakse tabelisse:
+
+```text id="run10"
+raw.raw_products
+```
 
 ---
 

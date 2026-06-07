@@ -42,8 +42,8 @@ def filter_estonia_products():
     con = duckdb.connect()
     print("Alustan Eesti toodete filtreerimist...")
 
-    con.execute("SET memory_limit='2GB'")
-    con.execute("SET threads=4")
+    con.execute("SET memory_limit='4GB'")
+    con.execute("SET threads=2")
     con.execute("""
         SET enable_progress_bar=true
     """)

@@ -139,8 +139,8 @@ def process_delta_file(
 
     con = duckdb.connect()
 
-    con.execute("SET memory_limit='2GB'")
-    con.execute("SET threads=4")
+    con.execute("SET memory_limit='4GB'")
+    con.execute("SET threads=2")
 
     try:
 
@@ -158,7 +158,7 @@ def process_delta_file(
 
         print(f"Leitud Eesti tooteid: " f"{filtered_product_count}")
 
-        rows_loaded = load_delta_file(delta_filename)
+        rows_loaded = load_delta_file(delta_filename, con)
 
         if rows_loaded is None:
 
