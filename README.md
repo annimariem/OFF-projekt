@@ -100,7 +100,7 @@ dbt testid käivitatakse automaatselt Airflow pipeline lõpus. Tulemused on näh
 ## dbt käsud (käsitsi käivitamiseks)
 
 ```bash
-docker exec -it off-dbt bash
+docker exec -it off-airflow bash
 
 # dbt projekti kaustas:
 cd /opt/project/dbt_project
@@ -352,7 +352,7 @@ Superset on kättesaadav:
 http://localhost:8088
 ```
 
-Admin kasutaja luuakse automaatselt `superset-init` teenuse kaudu.
+Admin kasutaja luuakse automaatselt `superset-init` teenuse kaudu. Admin kasutajana sisse logides kuvatakse avalehel näidis-näidikulaud (superset/dashboards/dashboard.zip).
 
 ---
 
@@ -375,23 +375,26 @@ Näites kasutatakse vaikimisi .env.example väärtusi.
 
 ### 11. Näidikulaud
 
-Näidikulaua export:
+Näidikulaua export (käsitsi importimiseks):
 
 ```text id="run17"
-superset/dashboards/dashboard_export_20260528T130721.zip
+superset/dashboards/dashboard.zip
 ```
 
 Näidikulaua screenshot:
 
 ```text id="run18"
-open-food-facts-eesti-andmed-2026-06-06T21-11-45.806Z.jpg
+dashboard.jpg
 ```
+![alt text](superset/dashboards/dashboard.jpg)
+
 
 
 ## Kokkuvõte, puudused ja võimalikud edasiarendused
 
 **Kokkuvõte:**
 - [Loetle, mis on lõpule viidud, mis töötab hästi]
+- Superset dashboard on esimesel korral ette laetud (andmebaasi ühendus, datasetid, chart'id)
 
 **Puudused:**
 - [Loetle ausalt, mis jäi tegemata - see ei mõjuta hinnet negatiivselt, vaid aitab hinnata]
